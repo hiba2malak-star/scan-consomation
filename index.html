@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>متابعة مبيعات المشروبات</title>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary: #0f766e;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #1e293b;
+            --danger: #dc2626;
+        }
+        * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+        body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 80px; }
+        header { background: var(--primary); color: white; padding: 14px; text-align: center; }
+        header h1 { margin: 0; font-size: 1.15rem; }
+
+        .role-bar {
+            background: #0f172a;
+            color: #fff;
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        .role-bar select {
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            background: #fff;
+            color: #0f172a;
+        }
+        .badge-scan-only {
+            background: #38bdf8;
+            color: #0f172a;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .badge-owner {
+            background: #4ade80;
+            color: #0f172a;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .shop-bar {
+            background: #e2e8f0;
+            padding: 10px 12px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .shop-bar input {
+            margin: 0;
+            padding: 8px 10px;
+            font-size: 0.9rem;
+            background: #fff;
+        }
+        .shop-bar button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            background: var(--primary);
+            color: #fff;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .total-banner {
+            background: #1e293b;
+            color: #38bdf8;
+            padding: 15px;
+            margin: 12px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .total-banner strong { font-size: 1.55rem; color: #4ade80; }
+
+        .tabs {
+            display: flex;
+            margin: 0 12px 12px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            padding: 4px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            font-weight: bold;
+            border-radius: 8px;
+            color: #475569;
+        }
+        .tab-btn.active { background: var(--card); color: var(--primary); }
+
+        .section { display: none; padding: 0 12px; }
+        .section.active { display: block; }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        #reader { width: 100%; border-radius: 10px; overflow: hidden; background: #000; }
+        .scan-feedback { text-align: center; margin-top: 10px; font-weight: bold; color: var(--primary); }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px 6px; text-align: right; border-bottom: 1px solid #e2e8f0; font-size: 0.95rem; }
+        .qty-controls button {
+            background: #e2e8f0; border: none; width: 28px; height: 28px;
+            border-radius: 6px; font-weight: bold; font-size: 1rem;
+        }
+        .qty-controls span { margin: 0 8px; font-weight: bold; }
+
+        .log-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0 0;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+        .log-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 6px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.88rem;
+        }
+        .log-time {
+            background: #e2e8f0;
+            color: #0f172a;
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: bold;
+            direction: ltr;
+        }
+
+        .btn {
+            width: 100%; padding: 12px; border: none; border-radius: 8px;
+            font-weight: bold; font-size: 1rem; margin-top: 8px; cursor: pointer;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+
+        input {
+            width: 100%; padding: 11px; margin: 6px 0 12px;
+            border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem;
+        }
+
+        #qr-result {
+            display: flex; flex-direction: column; align-items: center;
+            margin-top: 15px; padding: 15px; border: 2px dashed #cbd5e1; border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🥤 متابعة مبيعات المشروبات</h1>
+</header>
+
+<div class="role-bar">
+    <div>
+        <span>الوضع الحالي: </span>
+        <span id="badge-worker" class="badge-scan-only">سكان فقط</span>
+        <span id="badge-owner" class="badge-owner" style="display:none;">تحكم كامل (المعلم)</span>
+    </div>
+    <select id="user-role" onchange="changeRole()">
+        <option value="worker">👷 الخدام (سكان فقط)</option>
+        <option value="owner">👔 المعلم (تحكم كامل)</option>
+    </select>
+</div>
+
+<div class="shop-bar">
+    <input type="text" id="shop-code" placeholder="رمز المحل (مثلاً: mahal1)">
+    <button onclick="changeShop()">ربط المحل</button>
+</div>
+
+<div class="total-banner">
+    <span>المجموع الكلي اليوم:</span>
+    <strong id="grand-total">0.00 درهم</strong>
+</div>
+
+<div class="tabs" id="tabs-bar">
+    <button class="tab-btn active" onclick="switchTab('scan-tab', this)">📷 السكانير والحساب</button>
+    <button class="tab-btn" id="qr-tab-btn" style="display:none;" onclick="switchTab('qr-tab', this)"> مربعات QR (إنشاء)</button>
+</div>
+
+<div id="scan-tab" class="section active">
+    <div class="card" id="scanner-card">
+        <div id="reader"></div>
+        <button id="toggle-cam-btn" class="btn btn-primary" onclick="toggleCamera()">تشغيل الكاميرا للسكان</button>
+        <div id="feedback" class="scan-feedback">وجه الكاميرا نحو الكود المربع</div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top:0; font-size:1.05rem;">📊 تفاصيل المبيعات حسب المشروب</h3>
+        <div id="empty-msg" style="text-align:center; color:#94a3b8; padding:15px;">لا توجد مبيعات مسجلة بعد</div>
+        <table id="sales-table" style="display:none;">
+            <thead>
+                <tr>
+                    <th>المشروب</th>
+                    <th>العدد</th>
+                    <th>المجموع</th>
+                </tr>
+            </thead>
+            <tbody id="sales-body"></tbody>
+        </table>
+        <button id="reset-btn" class="btn btn-danger" style="margin-top:20px; display:none;" onclick="resetSales()">🗑️ تصفير الحساب (يوم جديد)</button>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top:0; font-size:1.05rem;">🕒 سجل الوقت لكل سكان</h3>
+        <div id="empty-logs" style="text-align:center; color:#94a3b8; padding:10px;">لا يوجد سجل عمليات بعد</div>
+        <ul id="logs-list" class="log-list"></ul>
+    </div>
+</div>
+
+<div id="qr-tab" class="section">
+    <div class="card">
+        <h3 style="margin-top:0; font-size:1.05rem;">➕ صناعة كود مربع (QR) لمشروب</h3>
+        <label>اسم المشروب</label>
+        <input type="text" id="prod-name" placeholder="مثلاً: كوكا كولا 33cl">
+        <label>الثمن بالدرهم</label>
+        <input type="number" id="prod-price" step="0.5" placeholder="مثلاً: 5">
+        <button class="btn btn-primary" onclick="generateQR()">توليد الكود المربع</button>
+        <div id="qr-result" style="display:none;">
+            <div id="qrcode"></div>
+            <p id="qr-label" style="font-weight:bold; margin:10px 0 0; font-size:1.1rem;"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const DATABASE_URL = "https://YOUR-PROJECT-ID-default-rtdb.firebaseio.com";
+    const OWNER_PIN = "1234"; // غيّر الرمز السري ديال المعلم هنا
+
+    let userRole = localStorage.getItem('user_role') || 'worker';
+    let shopCode = localStorage.getItem('shop_code') || 'mahal_default';
+
+    const roleSelect = document.getElementById('user-role');
+    roleSelect.value = userRole;
+    document.getElementById('shop-code').value = shopCode;
+
+    let shopData = { sales: {}, logs: [] };
+    let html5QrCode = null;
+    let isScanning = false;
+    let lastScanTime = 0;
+
+    function getCurrentTimeString() {
+        const now = new Date();
+        return now.toLocaleTimeString('ar-MA', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+    }
+
+    function isOwner() {
+        return userRole === 'owner';
+    }
+
+    function applyRoleUI() {
+        const owner = isOwner();
+        document.getElementById('badge-worker').style.display = owner ? 'none' : 'inline-block';
+        document.getElementById('badge-owner').style.display = owner ? 'inline-block' : 'none';
+        document.getElementById('qr-tab-btn').style.display = owner ? 'block' : 'none';
+        document.getElementById('reset-btn').style.display = owner ? 'block' : 'none';
+
+        if (!owner) {
+            switchTab('scan-tab', document.querySelector('.tab-btn'));
+        }
+        renderAll();
+    }
+
+    function changeRole() {
+        const selectedRole = roleSelect.value;
+
+        if (selectedRole === 'owner') {
+            const enteredPin = prompt("دخل الرمز السري (PIN) الخاص بالمعلم:");
+            if (enteredPin !== OWNER_PIN) {
+                alert("الرمز السري غالط!");
+                roleSelect.value = userRole;
+                return;
+            }
+        }
+
+        userRole = selectedRole;
+        localStorage.setItem('user_role', userRole);
+        applyRoleUI();
+    }
+
+    function getEndpoint() {
+        const cleanCode = encodeURIComponent(shopCode.trim() || 'mahal_default');
+        return `${DATABASE_URL}/shops/${cleanCode}.json`;
+    }
+
+    function changeShop() {
+        const val = document.getElementById('shop-code').value.trim();
+        if (!val) return alert("دخل رمز المحل أولاً");
+        shopCode = val;
+        localStorage.setItem('shop_code', shopCode);
+        fetchShopData();
+        alert(`تم الربط مع المحل: ${shopCode}`);
+    }
+
+    async function fetchShopData() {
+        if (DATABASE_URL.includes("YOUR-PROJECT-ID")) return;
+        try {
+            const res = await fetch(getEndpoint());
+            const data = await res.json();
+            shopData = {
+                sales: (data && data.sales) ? data.sales : {},
+                logs: (data && Array.isArray(data.logs)) ? data.logs : []
+            };
+            renderAll();
+        } catch (e) {
+            console.error("خطأ في الاتصال بالقاعدة:", e);
+        }
+    }
+
+    async function syncShopData() {
+        renderAll();
+        if (DATABASE_URL.includes("YOUR-PROJECT-ID")) return;
+        try {
+            await fetch(getEndpoint(), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(shopData)
+            });
+        } catch (e) {
+            console.error("تعذر حفظ التحديث:", e);
+        }
+    }
+
+    function playBeep() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.12);
+        } catch(e) {}
+    }
+
+    function switchTab(tabId, btn) {
+        if (!isOwner() && tabId === 'qr-tab') return;
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        if (btn) btn.classList.add('active');
+        if (tabId !== 'scan-tab' && isScanning) stopCamera();
+    }
+
+    function toggleCamera() {
+        isScanning ? stopCamera() : startCamera();
+    }
+
+    function startCamera() {
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 220, height: 220 } }, onScanSuccess)
+        .then(() => {
+            isScanning = true;
+            const btn = document.getElementById('toggle-cam-btn');
+            btn.textContent = "إيقاف الكاميرا";
+            btn.classList.replace('btn-primary', 'btn-danger');
+        })
+        .catch(() => alert("تعذر فتح الكاميرا. تأكد من صلاحية الكاميرا ورابط HTTPS."));
+    }
+
+    function stopCamera() {
+        if (html5QrCode && isScanning) {
+            html5QrCode.stop().then(() => {
+                isScanning = false;
+                const btn = document.getElementById('toggle-cam-btn');
+                btn.textContent = "تشغيل الكاميرا للسكان";
+                btn.classList.replace('btn-danger', 'btn-primary');
+            });
+        }
+    }
+
+    function onScanSuccess(decodedText) {
+        const now = Date.now();
+        if (now - lastScanTime < 1500) return;
+        lastScanTime = now;
+
+        let name = decodedText;
+        let price = 0;
+
+        if (decodedText.includes('|')) {
+            const parts = decodedText.split('|');
+            name = parts[0].trim();
+            price = parseFloat(parts[1]) || 0;
+        } else if (shopData.sales[name]) {
+            price = shopData.sales[name].price;
+        }
+
+        const scanTime = getCurrentTimeString();
+
+        if (!shopData.sales[name]) {
+            shopData.sales[name] = { count: 0, price: price, lastTime: scanTime };
+        } else {
+            if (price > 0) shopData.sales[name].price = price;
+            shopData.sales[name].lastTime = scanTime;
+        }
+        shopData.sales[name].count += 1;
+
+        shopData.logs.unshift({
+            name: name,
+            price: shopData.sales[name].price,
+            time: scanTime
+        });
+        if (shopData.logs.length > 200) shopData.logs.length = 200;
+
+        playBeep();
+        syncShopData();
+
+        const fb = document.getElementById('feedback');
+        fb.textContent = `✅ ${name} (${shopData.sales[name].price} درهم) - ${scanTime}`;
+        setTimeout(() => { fb.textContent = "وجه الكاميرا نحو الكود المربع"; }, 2000);
+    }
+
+    function updateQty(name, delta) {
+        if (!isOwner() || !shopData.sales[name]) return;
+        shopData.sales[name].count += delta;
+        shopData.sales[name].lastTime = getCurrentTimeString();
+        if (shopData.sales[name].count <= 0) {
+            delete shopData.sales[name];
+        } else if (delta > 0) {
+            shopData.logs.unshift({
+                name: name,
+                price: shopData.sales[name].price,
+                time: shopData.sales[name].lastTime
+            });
+        }
+        syncShopData();
+    }
+
+    function renderAll() {
+        renderTable();
+        renderLogs();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('sales-body');
+        const table = document.getElementById('sales-table');
+        const emptyMsg = document.getElementById('empty-msg');
+        tbody.innerHTML = '';
+
+        let grandTotal = 0;
+        const sales = shopData.sales || {};
+        const keys = Object.keys(sales);
+
+        if (keys.length === 0) {
+            table.style.display = 'none';
+            emptyMsg.style.display = 'block';
+            document.getElementById('grand-total').textContent = '0.00 درهم';
+            return;
+        }
+
+        table.style.display = 'table';
+        emptyMsg.style.display = 'none';
+
+        keys.forEach(name => {
+            const item = sales[name];
+            const itemTotal = item.count * item.price;
+            grandTotal += itemTotal;
+
+            const qtyCell = isOwner()
+                ? `<div class="qty-controls">
+                        <button onclick="updateQty('${name}', -1)">-</button>
+                        <span>${item.count}</span>
+                        <button onclick="updateQty('${name}', 1)">+</button>
+                   </div>`
+                : `<strong>${item.count}</strong>`;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <strong>${name}</strong><br>
+                    <small style="color:#64748b">${item.price} درهم</small>
+                    ${item.lastTime ? `<br><small style="color:#0f766e">آخر سكان: ${item.lastTime}</small>` : ''}
+                </td>
+                <td>${qtyCell}</td>
+                <td><strong>${itemTotal.toFixed(2)}</strong> د.م</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('grand-total').textContent = grandTotal.toFixed(2) + ' درهم';
+    }
+
+    function renderLogs() {
+        const list = document.getElementById('logs-list');
+        const emptyLogs = document.getElementById('empty-logs');
+        list.innerHTML = '';
+
+        const logs = shopData.logs || [];
+        if (logs.length === 0) {
+            emptyLogs.style.display = 'block';
+            return;
+        }
+
+        emptyLogs.style.display = 'none';
+        logs.forEach(entry => {
+            const li = document.createElement('li');
+            li.className = 'log-item';
+            li.innerHTML = `
+                <span><strong>${entry.name}</strong> <small style="color:#64748b">(${entry.price} د.م)</small></span>
+                <span class="log-time">${entry.time}</span>
+            `;
+            list.appendChild(li);
+        });
+    }
+
+    function resetSales() {
+        if (!isOwner()) return;
+        if (confirm("واش متأكد بغيتي تصفر حساب اليوم وسجل الوقت؟")) {
+            shopData = { sales: {}, logs: [] };
+            syncShopData();
+        }
+    }
+
+    function generateQR() {
+        if (!isOwner()) return;
+        const name = document.getElementById('prod-name').value.trim();
+        const price = document.getElementById('prod-price').value.trim();
+        if (!name || !price) return alert("دخل سمية المشروب والثمن");
+
+        const qrContainer = document.getElementById('qrcode');
+        qrContainer.innerHTML = '';
+        new QRCode(qrContainer, { text: `${name}|${price}`, width: 180, height: 180 });
+        document.getElementById('qr-label').textContent = `${name} - ${price} درهم`;
+        document.getElementById('qr-result').style.display = 'flex';
+    }
+
+    applyRoleUI();
+    fetchShopData();
+    setInterval(fetchShopData, 3000);
+</script>
+</body>
+</html>
